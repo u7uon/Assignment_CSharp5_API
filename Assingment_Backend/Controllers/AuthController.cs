@@ -1,5 +1,6 @@
 ﻿using Assignment_Backend.DTOs;
 using Assignment_Backend.Interfaces;
+using Assingment_Backend.DTOs;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -21,6 +22,13 @@ namespace Assignment_Backend.Controllers
             this.authService = authService;
         }
 
+        public enum OAuthProvider
+        {
+            Google,
+            Facebook,
+            Microsoft
+        }
+
         [HttpPost]
         [Route("Register")]
         public async Task<IActionResult> Register(RegisterModel register)
@@ -31,6 +39,39 @@ namespace Assignment_Backend.Controllers
 
         }
 
+        [HttpPost]
+        [Route("OAuth/Login")]
+        public async Task<IActionResult> OAuthLogin([FromBody] OAuthLoginRequest request)
+        {
+            try
+            {
+                if (request == null)
+                {
+                    return BadRequest(new { Message = "Dữ liệu không hợp lệ" });
+                }
+
+                var response = await authService.OAuthLoginAsync(request);
+
+                if (!response.SignInResult.Succeeded)
+                {
+                    return Unauthorized(new { Message = response.Message });
+                    
+                }
+                else
+                {
+                    return Ok(new
+                    {
+                        Message = response.Message,
+                        Token = response.Token,
+                        Role = response.Role
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Lỗi hệ thống", Error = ex.Message });
+            }
+        }
 
         [HttpPost]
         [Route("Login")]
@@ -85,6 +126,8 @@ namespace Assignment_Backend.Controllers
 
             return Ok(userId);
         }
+
+
 
 
     }   

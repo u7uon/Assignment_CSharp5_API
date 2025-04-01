@@ -1,9 +1,11 @@
-﻿using Assignment_Backend.DTOs;
+﻿using Assignment_Backend.Data;
+using Assignment_Backend.DTOs;
 using Assignment_Backend.Interfaces;
 using Assignment_Backend.Models;
 using Assignment_Backend.Repository;
 using Assingment_Backend.DTOs;
 using Assingment_Backend.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Drawing;
@@ -16,10 +18,13 @@ namespace Assignment_Backend.Services
     public class ProductService : IProductService
     {
         private readonly IProductRepository _productRepository;
+        private readonly ApplicationContext _context;
+        private const int PAGE_SIZE = 10; 
 
-        public ProductService(IProductRepository productRepository)
+        public ProductService(IProductRepository productRepository, ApplicationContext context)
         {
             _productRepository = productRepository;
+            _context = context;
         }
 
         public async Task<ServiceResponse> AddProductAsync(ProductDTO productDTO)
@@ -46,7 +51,7 @@ namespace Assignment_Backend.Services
 
 
 
-                await _productRepository.AddProductAsync(product);
+                await _productRepository.AddAsync(product);
                 await _productRepository.SaveChangesAsync();
 
 
@@ -74,12 +79,12 @@ namespace Assignment_Backend.Services
                 // Xóa ảnh sản phẩm nếu có
                 if (!string.IsNullOrEmpty(product.Image))
                 {
-                   await DeleteImage(product.Image);
+                    await DeleteImage(product.Image);
                 }
 
 
                 // Xóa sản phẩm
-                await _productRepository.DeleteProductAsync(id);
+                await _productRepository.DeleteAsync(product);
                 await _productRepository.SaveChangesAsync();
 
                 return new ServiceResponse(true, "Xóa sản phẩm thành công");
@@ -90,16 +95,15 @@ namespace Assignment_Backend.Services
             }
         }
 
-        public async Task<ItemViewDTO<Product>> GetAllProductAsync(int currentPage)
+        public async Task<ItemViewDTO<ProductGetDto>> GetAllProductAsync(int currentPage)
         {
-            var ProductsView = new ItemViewDTO<Product>();
+            var ProductsView = new ItemViewDTO<ProductGetDto>();
 
-            var (total, products) = await _productRepository.GetAllProductAsync(currentPage, ProductsView.PageSize);
+            var (total, products) = await _productRepository.GetAllAsync(currentPage);
 
             ProductsView.Items = products;
             ProductsView.MaxPage = (int)Math.Ceiling((double)total / ProductsView.PageSize);
             ProductsView.CurrentPage = currentPage;
-
 
             return ProductsView;
         }
@@ -109,21 +113,49 @@ namespace Assignment_Backend.Services
             return _productRepository.GetProductByIdAsync(id);
         }
 
-        public async Task<SearchViewDTO> GetProductsByNameAsync(string keyword, int currentPage, int pageSize, FilterModel filter = null)
+        public async Task<SearchViewDTO> SearchByName(string keyword, int currentPage,  FilterModel filter = null)
         {
-            var products = await _productRepository.GetProductsByNameAsync(keyword);
+            var productQuery =  _productRepository.SearchByName( keyword);
 
-            var categories = products.Select(x => x.Category).Distinct().ToList();
-            var brands = products.Select(x => x.Brand).Distinct().ToList();
+            var sql = productQuery.ToQueryString();
+            Console.WriteLine(sql);
 
-            var filteredProducts = Filter(products, filter);
+            var total = await productQuery.CountAsync();
+
+            var categories = await productQuery.Select(
+                    x => new Category
+                    {
+                        Id = x.CategoryId,
+                        Name = x.Category.Name
+                    }
+                ).Distinct().ToListAsync();
+
+            var brands = await productQuery.Select(
+                    x => new Brand
+                    {
+                        BrandId = x.BrandId,
+                        Name = x.Brand.Name
+                    }
+                ).Distinct().ToListAsync();
+
+            var products = await Filter(filter, productQuery)
+                .Skip((currentPage - 1) * PAGE_SIZE)
+                .Take(PAGE_SIZE)
+                .Select(x => new ProductViewDTO
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Price = x.Price,
+                    ImageUrl = x.Image
+                })
+                .ToListAsync();
+
 
             return new SearchViewDTO()
             {
-                Item = filteredProducts.Skip((currentPage - 1) * pageSize).Take(pageSize),
+                Item = products,
                 KeyWord = keyword,
-                PageSize = pageSize,
-                MaxPage = (int)Math.Ceiling((double)filteredProducts.Count() / pageSize),
+                MaxPage =  (int)Math.Ceiling((double)total / 10),
                 Categories = categories,
                 Brands = brands,
                 FilterModel = filter
@@ -165,10 +197,10 @@ namespace Assignment_Backend.Services
                 existingProduct.Quantity = productDto.Quantity;
 
 
-               
+
 
                 // Lưu thay đổi
-                await _productRepository.UpdateProductAsync(existingProduct.Id, existingProduct);
+                await _productRepository.UpdateAsync(existingProduct);
 
                 await _productRepository.SaveChangesAsync();
 
@@ -181,22 +213,28 @@ namespace Assignment_Backend.Services
         }
 
 
-        private IEnumerable<Product> Filter(IEnumerable<Product> products, FilterModel filter)
+        private IQueryable<Product> Filter(FilterModel filter, IQueryable<Product> products)
         {
-            if (filter == null)
-                return products;
+            if (filter == null) return products;
 
-            if (filter.Brands != null)
+            if (filter.Brands?.Any() == true)
                 products = products.Where(x => filter.Brands.Contains(x.BrandId));
 
-            if (filter.Categories != null)
+            if (filter.Categories?.Any() == true)
                 products = products.Where(x => filter.Categories.Contains(x.CategoryId));
 
-            //if (filter.MinPrice.HasValue && filter.MaxPrice.HasValue)
-            //    products = products.Where(x => x.Price >= filter.MinPrice.Value && x.Price <= filter.MaxPrice.Value);
+            if (filter.MaxPrice.HasValue)
+                products = products.Where(x => x.Price <= filter.MaxPrice);
 
-            //if (filter.Ascending.HasValue)
-            //    products = filter.Ascending == 1 ? products.OrderBy(x => x.Price) : products.OrderByDescending(x => x.Price);
+            if (filter.MinPrice.HasValue)
+                products = products.Where(x => x.Price >= filter.MinPrice);
+
+            products = filter.Ascending switch
+            {
+                1 => products.OrderByDescending(x => x.Price),
+                2 => products.OrderBy(x => x.Price),
+                _ => products
+            };
 
             return products;
         }
@@ -265,15 +303,6 @@ namespace Assignment_Backend.Services
                 throw new Exception($"Lỗi khi upload file: {ex.Message}");
             }
         }
-
-        private List<ProductSizeDTO> ConvertSize(string sizes)
-        {
-            if (sizes == null)
-                throw new Exception("Thiếu size");
-
-            return System.Text.Json.JsonSerializer.Deserialize<List<ProductSizeDTO>>(sizes);
-        }
-
 
         private async Task DeleteImage(string FileName)
         {

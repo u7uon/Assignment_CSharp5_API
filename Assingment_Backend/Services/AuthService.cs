@@ -1,11 +1,13 @@
 ﻿using Assignment_Backend.DTOs;
 using Assignment_Backend.Interfaces;
 using Assignment_Backend.Models;
+using Assingment_Backend.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using static Assignment_Backend.Controllers.AuthController;
 
 namespace Assignment_Backend.Services
 {
@@ -21,6 +23,59 @@ namespace Assignment_Backend.Services
             this.signInManager = signInManager;
             _userManager = userManager;
             _configuration = configuration;
+        }
+
+        public OAuthProviderConfig GetOAuthProviderConfig(OAuthProvider provider)
+        {
+            return provider switch
+            {
+                OAuthProvider.Google => new OAuthProviderConfig
+                {
+                    ClientId = _configuration["OAuth:Google:ClientId"],
+                    ClientSecret = _configuration["OAuth:Google:ClientSecret"],
+                    TokenEndpoint = "https://oauth2.googleapis.com/token",
+                    UserInfoEndpoint = "https://www.googleapis.com/oauth2/v3/userinfo"
+                },
+                OAuthProvider.Facebook => new OAuthProviderConfig
+                {
+                    ClientId = _configuration["OAuth:Facebook:ClientId"],
+                    ClientSecret = _configuration["OAuth:Facebook:ClientSecret"],
+                    TokenEndpoint = "https://graph.facebook.com/v12.0/oauth/access_token",
+                    UserInfoEndpoint = "https://graph.facebook.com/me?fields=id,email,name"
+                },
+                OAuthProvider.Microsoft => new OAuthProviderConfig
+                {
+                    ClientId = _configuration["OAuth:Microsoft:ClientId"],
+                    ClientSecret = _configuration["OAuth:Microsoft:ClientSecret"],
+                    TokenEndpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+                    UserInfoEndpoint = "https://graph.microsoft.com/v1.0/me"
+                },
+                _ => throw new ArgumentException("Unsupported OAuth provider")
+            };
+        }
+
+
+        public string GenerateJwtToken(User user)
+        {
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("your_super_secret_key_that_is_at_least_32_bytes_long_for_hmacsha256!"));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+            var token = new JwtSecurityToken(
+                issuer: null,
+                audience: null,
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(2),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         private async Task<string> GenerateToken(User user)
@@ -151,5 +206,71 @@ namespace Assignment_Backend.Services
             return result;
 
         }
+
+        public async Task<LoginResponse> OAuthLoginAsync(OAuthLoginRequest request)
+        {
+            try
+            {
+                if (request == null)
+                    return new LoginResponse()
+                    {
+                        SignInResult = SignInResult.Failed,
+                        Message = "Dữ liệu không hợp lệ",
+                        Token = string.Empty,
+                        Role = string.Empty
+                    };
+
+                var result = await signInManager.ExternalLoginSignInAsync(request.Provider, request.AuthorizationCode, true);
+
+                if (result.Succeeded)
+                {
+                    // Lấy thông tin người dùng từ Provider
+                    var user = await _userManager.FindByLoginAsync(request.Provider, request.AuthorizationCode);
+                    if (user == null)
+                    {
+                        return new LoginResponse()
+                        {
+                            SignInResult = SignInResult.Failed,
+                            Message = "Người dùng không tồn tại",
+                            Token = string.Empty,
+                            Role = string.Empty
+                        };
+                    }
+
+                    // Tạo JWT token (giả sử bạn có phương thức GenerateJwtToken)
+                    string token = GenerateJwtToken(user);
+                    string role = (await _userManager.GetRolesAsync(user)).FirstOrDefault() ?? string.Empty;
+
+                    return new LoginResponse()
+                    {
+                        SignInResult = SignInResult.Success,
+                        Message = "Đăng nhập thành công",
+                        Token = token,
+                        Role = role
+                    };
+                }
+                else
+                {
+                    return new LoginResponse()
+                    {
+                        SignInResult = SignInResult.Failed,
+                        Message = "Đăng nhập thất bại",
+                        Token = string.Empty,
+                        Role = string.Empty
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                return new LoginResponse()
+                {
+                    SignInResult = SignInResult.Failed,
+                    Message = ex.Message,
+                    Token = string.Empty,
+                    Role = string.Empty
+                };
+            }
+        }
+
     }
 }

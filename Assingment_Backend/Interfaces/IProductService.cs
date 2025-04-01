@@ -6,10 +6,10 @@ namespace Assignment_Backend.Interfaces
 {
     public interface IProductService
     {
-        public Task<SearchViewDTO> GetProductsByNameAsync(string keyword, int currentPage, int pageSize, FilterModel filter = null);
+        public Task<SearchViewDTO> SearchByName(string keyword, int currentPage, FilterModel filter = null);
         public Task<Product> GetProductByIdAsync(int id);
 
-        public Task<ItemViewDTO<Product>> GetAllProductAsync(int currentPage);
+        public Task<ItemViewDTO<ProductGetDto>> GetAllProductAsync(int currentPage);
 
         public Task<ServiceResponse> AddProductAsync(ProductDTO productDTO);
 

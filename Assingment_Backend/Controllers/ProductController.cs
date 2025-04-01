@@ -28,7 +28,6 @@ namespace Assignment_Backend.Controllers
             var products = await _productService.GetAllProductAsync(currentPage);
 
             return Ok(products);
-
         }
 
 
@@ -72,9 +71,9 @@ namespace Assignment_Backend.Controllers
 
         [HttpGet]
         [Route("Search")]
-        public async Task<IActionResult> Search(string keyWord, [FromBody] FilterModel? filter, int currentPage)
+        public async Task<IActionResult> Search(string keyWord, [FromQuery] FilterModel? filter, int currentPage)
         {
-            return Ok(await _productService.GetProductsByNameAsync(keyWord, currentPage, 10, filter));
+            return Ok(await _productService.SearchByName(keyWord, currentPage, filter));
         }
 
 
