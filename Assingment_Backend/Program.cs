@@ -24,7 +24,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: MyAllowSpecificOrigins,
         policy =>
         {
-            policy.WithOrigins("http://localhost:5175") // Cho phép frontend truy cập API
+            policy.WithOrigins("http://localhost:5173") // Cho phép frontend truy cập API
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });

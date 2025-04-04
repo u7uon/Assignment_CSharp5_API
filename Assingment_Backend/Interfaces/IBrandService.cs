@@ -1,11 +1,12 @@
 ﻿using Assignment_Backend.DTOs;
 using Assignment_Backend.Models;
+using Assingment_Backend.DTOs;
 
 namespace Assignment_Backend.Interfaces
 {
     public interface IBrandService
     {
-        public Task<IEnumerable<Brand>> GetBrandAsync();
+        public Task<ItemViewDTO<Brand>> GetBrandsAsync(int currentPage);
 
         public Task<Brand> GetBrandAsync(int id);
 

@@ -12,7 +12,7 @@ namespace Assignment_Backend.Repository
 {
     public class ProductRepository : GenericRepository<Product>, IProductRepository
     {
-        private readonly ApplicationContext _context;
+        //private readonly ApplicationContext _context;
         private const int PAGE_SIZE = 10;
         public ProductRepository(ApplicationContext context) : base(context) 
         {
@@ -41,6 +41,22 @@ namespace Assignment_Backend.Repository
                 .ToListAsync();
 
             return (total, products);
+        }
+
+        public async Task<IEnumerable<ProductViewDTO>> GetLatest()
+        {
+            return await _dbSet.AsNoTracking()
+                .OrderByDescending(x => x.Id)
+                .Select
+                (
+                    x => new ProductViewDTO
+                    {
+                        Id = x.Id,
+                        Name = x.Name,
+                        ImageUrl = x.Image,
+                        Price = x.Price
+                    }
+                ).Take(10).ToListAsync();
         }
 
         public async Task<Product> GetProductByIdAsync(int id)

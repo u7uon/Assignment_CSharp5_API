@@ -17,5 +17,7 @@ namespace Assignment_Backend.Interfaces
         public Task<ServiceResponse> UpdateProductAsync(int id, ProductDTO productDto);
 
         public Task<ServiceResponse> UpdateStockAsync(int productId , int quantity);
+
+        public Task<IEnumerable<ProductViewDTO>> GetLatest(); 
     }
 }

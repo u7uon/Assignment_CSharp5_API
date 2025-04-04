@@ -13,7 +13,9 @@ namespace Assignment_Backend.Interfaces
 
         public Task<Product> GetProductByIdAsync(int id);
 
-        public Task<(int, IEnumerable<ProductGetDto>)> GetAllAsync(int currentPage); 
+        public Task<(int, IEnumerable<ProductGetDto>)> GetAllAsync(int currentPage);
+
+        public Task<IEnumerable<ProductViewDTO>> GetLatest();
 
 
         

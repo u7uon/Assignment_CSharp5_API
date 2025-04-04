@@ -44,6 +44,7 @@ namespace Assignment_Backend.Services
                 {
                     Name = productDTO.Name,
                     Description = productDTO.Description,
+                    Price = productDTO.Price,
                     Image = imageUrl,
                     BrandId = productDTO.BrandId,
                     CategoryId = productDTO.CategoryId
@@ -116,9 +117,6 @@ namespace Assignment_Backend.Services
         public async Task<SearchViewDTO> SearchByName(string keyword, int currentPage,  FilterModel filter = null)
         {
             var productQuery =  _productRepository.SearchByName( keyword);
-
-            var sql = productQuery.ToQueryString();
-            Console.WriteLine(sql);
 
             var total = await productQuery.CountAsync();
 
@@ -321,5 +319,9 @@ namespace Assignment_Backend.Services
             }
         }
 
+        public Task<IEnumerable<ProductViewDTO>> GetLatest()
+        {
+            return _productRepository.GetLatest();
+        }
     }
 }

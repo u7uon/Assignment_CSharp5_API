@@ -100,5 +100,13 @@ namespace Assignment_Backend.Controllers
         }
 
 
+        [HttpGet("latest")]
+        public async Task<IActionResult> GetLatest()
+        {
+
+            return Ok( await _productService.GetLatest() ); 
+        }
+
+
     }
 }
