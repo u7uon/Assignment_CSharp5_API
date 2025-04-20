@@ -22,6 +22,8 @@ namespace Assignment_Backend.Models
 
         public int BrandId { get; set; }
 
+        public bool IsActive { get; set; }
+
 
         public virtual Brand? Brand { get; set; }
 

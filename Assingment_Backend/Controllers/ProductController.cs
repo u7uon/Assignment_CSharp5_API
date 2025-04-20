@@ -23,9 +23,9 @@ namespace Assignment_Backend.Controllers
         [HttpGet]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetAllProductAsync([FromQuery] int currentPage = 1)
+        public async Task<IActionResult> GetAllProductAsync([FromQuery] int currentPage = 1, [FromQuery] bool status = true )
         {
-            var products = await _productService.GetAllProductAsync(currentPage);
+            var products = await _productService.GetAllProductAsync(currentPage, status);
 
             return Ok(products);
         }
@@ -105,6 +105,16 @@ namespace Assignment_Backend.Controllers
         {
 
             return Ok( await _productService.GetLatest() ); 
+        }
+
+        [HttpPatch("{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] bool status)
+        {
+            var result = await _productService.UpdateStatus(id, status);
+
+            return result.Isuccess ? Ok() : BadRequest(new { Message = result.Message });
         }
 
 

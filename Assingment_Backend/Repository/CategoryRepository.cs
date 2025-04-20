@@ -51,6 +51,22 @@ namespace Assignment_Backend.Repository
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
+        public async Task<IEnumerable<TopItemDTO<Category>>> GetTopCategory()
+        {
+            return await _dbSet.Select(
+                    x => new TopItemDTO<Category>
+                    {
+                        Data = new Category
+                        {
+                            Id = x.Id ,
+                            Name = x.Name 
+                        },
+                        Total = x.Products.Count
+                    }
+                ).OrderByDescending(c => c.Total)
+                .Take(6)
+                .ToListAsync();
         }
+    }
     }
 

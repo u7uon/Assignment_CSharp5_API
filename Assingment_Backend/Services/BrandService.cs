@@ -1,17 +1,22 @@
-﻿using Assignment_Backend.DTOs;
+﻿using Assignment_Backend.Data;
+using Assignment_Backend.DTOs;
 using Assignment_Backend.Interfaces;
 using Assignment_Backend.Models;
 using Assingment_Backend.DTOs;
+using Microsoft.EntityFrameworkCore;
 
 namespace Assignment_Backend.Services
 {
     public class BrandService : IBrandService
     {
         private readonly IBrandRepository _BrandRepository;
+        private readonly ApplicationContext _context;
 
-        public BrandService(IBrandRepository BrandRepository)
+        public BrandService(IBrandRepository BrandRepository ,ApplicationContext co)
         {
             _BrandRepository = BrandRepository;
+            _context = co;
+            
         }
 
         public async Task<ServiceResponse> AddBrandAsync(Brand Brand)
@@ -102,6 +107,17 @@ namespace Assignment_Backend.Services
         public async Task<Brand> GetBrandAsync(int id)
         {
             return await _BrandRepository.GetBrandAsync(id);
+        }
+
+        public async Task<IEnumerable<BrandDTO>> All()
+        {
+            return await _context.Brand.Select(
+                   x => new BrandDTO
+                   {
+                       BrandId = x.BrandId,
+                       Name = x.Name
+                   }
+                ).ToListAsync(); 
         }
     }
 }

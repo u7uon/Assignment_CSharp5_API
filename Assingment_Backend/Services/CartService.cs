@@ -1,6 +1,7 @@
 ﻿using Assignment_Backend.DTOs;
 using Assignment_Backend.Interfaces;
 using Assignment_Backend.Models;
+using Assingment_Backend.DTOs;
 
 namespace Assignment_Backend.Services
 {
@@ -32,22 +33,27 @@ namespace Assignment_Backend.Services
             {
                 var newCart = new Cart { UserId = userId };
                 var result = await _cartRepository.AddCartAsync(newCart);
+                await _cartRepository.SaveChangesAsync();
+
                 if (!result)
                 {
                     return new ServiceResponse(false, "Không thể tạo giỏ hàng");
                 }
-                cart = newCart;
             }
 
-            var exitingItem = await _cartRepository.GetCartItemByProductAsync(productId, cart.CartID);
+            var exitingItem = await _cartRepository.GetCartItemByProductAsync(cart.CartID, productId);
 
             if (exitingItem != null)
             {
-                exitingItem.Quantity += quantity;
+                var newTotalQuantity = exitingItem.Quantity + quantity;
+                if (newTotalQuantity > product.Quantity)
+                    return new ServiceResponse(false, "Tổng số lượng vượt quá giới hạn tồn kho");
+
+                exitingItem.Quantity = newTotalQuantity;
 
                 return await _cartRepository.UpdateCartItemAsync(exitingItem)
-                ? new ServiceResponse(true, "Thêm vào giỏ hàng thành công")
-                : new ServiceResponse(false, "Không thể thêm vào giỏ , thử lại sau");
+                    ? new ServiceResponse(true, "Thêm vào giỏ hàng thành công")
+                    : new ServiceResponse(false, "Không thể thêm vào giỏ , thử lại sau");
             }
 
 
@@ -63,17 +69,18 @@ namespace Assignment_Backend.Services
                 : new ServiceResponse(false, "Không thể thêm vào giỏ , thử lại sau");
         }
 
-        public async Task<Cart> GetCart(string userId)
+        public async Task<CartViewDTO> GetCart(string userId)
         {
             var cart = await _cartRepository.GetCartByUserIdAsync(userId);
 
             if (cart == null)
             {
-                cart = new Cart()
+                 var newCart = new Cart()
                 {
                     UserId = userId,
                 };
-                await _cartRepository.AddCartAsync(cart);
+                await _cartRepository.AddCartAsync(newCart);
+                return new CartViewDTO();
             }
             return cart;
         }
@@ -129,6 +136,25 @@ namespace Assignment_Backend.Services
             await _cartRepository.SaveChangesAsync();
 
             return new ServiceResponse(true, "Giảm số lượng thành công");
+        }
+
+        public async Task<ServiceResponse> ClearCart(string userID)
+        {
+                
+            try
+            {
+                var cart = await GetCart(userID); 
+                foreach(var item in cart.cartItems)
+                {
+                    await _cartRepository.DeleteCartItemAsync(new CartItem { Id = item.Id });
+                }
+                return new ServiceResponse(true, "Thành công"); 
+            }
+            catch
+            {
+                return new ServiceResponse(true, "Xảy ra lỗi rùi");
+            }
+            
         }
     }
 }

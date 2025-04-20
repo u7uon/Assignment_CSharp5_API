@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Assignment_Backend.Services;
 
 namespace Assignment_Backend.Controllers
 {
@@ -43,9 +44,9 @@ namespace Assignment_Backend.Controllers
         {
             var result = await _categoryService.AddCategoryAsync(category);
             if (result.Isuccess)
-                return Ok(result.Message);
+                return Ok(new { message = result.Message });
 
-            return BadRequest(result.Message);
+            return BadRequest(new { message = result.Message });
         }
 
         [HttpPut("{id}")]
@@ -55,9 +56,9 @@ namespace Assignment_Backend.Controllers
         {
             var result = await _categoryService.UpdateCategoryAsync(id, category);
             if (result.Isuccess)
-                return Ok(result.Message);
+                return Ok(new { message = result.Message });
 
-            return BadRequest(result.Message);
+            return BadRequest(new { message = result.Message });
 
         }
 
@@ -70,6 +71,20 @@ namespace Assignment_Backend.Controllers
 
             return result.Isuccess ? Ok(result.Message) : BadRequest(result.Message);
         }
+
+
+        [HttpGet("top")]
+        public async Task<IActionResult> GetTopCategory()
+        {
+            return Ok(await _categoryService.GetTopCategory());
+        }
+
+        [HttpGet("All")]
+        public async Task<IActionResult> All()
+        {
+            return Ok(await _categoryService.All());
+        }
+
     }
 
 }

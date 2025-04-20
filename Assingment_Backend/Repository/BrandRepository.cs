@@ -25,7 +25,8 @@ namespace Assignment_Backend.Repository
                 .Select(x => new Brand
                 {
                     BrandId = x.BrandId,
-                    Name = x.Name
+                    Name = x.Name,
+                    Description = x.Description
                 })
                 .ToListAsync();
 

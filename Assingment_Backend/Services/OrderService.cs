@@ -1,7 +1,10 @@
-﻿using Assignment_Backend.DTOs;
+﻿using Assignment_Backend.Data;
+using Assignment_Backend.DTOs;
 using Assignment_Backend.Interfaces;
 using Assignment_Backend.Models;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design.Internal;
 
 namespace Assignment_Backend.Services
 {
@@ -9,11 +12,15 @@ namespace Assignment_Backend.Services
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IProductService _productService;
+        private readonly ApplicationContext _context;
+        private readonly ICartService _cartService;
 
-        public OrderService(IOrderRepository orderRepository ,IProductService productService)
+        public OrderService(IOrderRepository orderRepository, IProductService productService, ApplicationContext context, ICartService cartService)
         {
             _orderRepository = orderRepository;
             _productService = productService;
+            _context = context;
+            _cartService = cartService;
         }
 
         public async Task<ServiceResponse> CancelOrderAsync(int OrderId)
@@ -28,7 +35,7 @@ namespace Assignment_Backend.Services
             order.OrderStatus = Order.Status.Canceled.ToString();
             await _orderRepository.SaveChanges();
 
-            return new ServiceResponse(true, "Hủy đơn hàng thành công");     
+            return new ServiceResponse(true, "Hủy đơn hàng thành công");
 
         }
 
@@ -45,33 +52,61 @@ namespace Assignment_Backend.Services
             return await _orderRepository.GetOrdersByUserIdAsync(userId);
         }
 
-        public async Task<ServiceResponse> PlaceOrderAsync(Order order)
+        public async Task<ServiceResponse> PlaceOrderAsync(string userId, OrderDTO orderdto)
         {
-            if (order.OrderDetails == null || !order.OrderDetails.Any())
-                return new ServiceResponse(false, "Đơn hàng chưa có sản phẩm");
 
-            try
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-
-                foreach (var item in order.OrderDetails)
+                try
                 {
-                    var result = await _productService.UpdateStockAsync(item.ProductId, item.OrderQuantity);
+                    //Kiểm tra giỏ
+                    var cart = await _cartService.GetCart(userId);
 
-                    if (!result.Isuccess)
-                        return new ServiceResponse(false, result.Message); break;
+                    if (cart == null || !cart.cartItems.Any())
+                        return new ServiceResponse(false, "Giỏ hàng trống");
+
+                    var order = new Order
+                    {
+                        UserId = userId,
+                        OrderDate = DateTime.Now,
+                        OrderStatus = Order.Status.Pending.ToString(),
+                        Address = orderdto.Address,
+                        //PhoneNumber = orderInfo.PhoneNumber,
+                        PayMethod = orderdto.PayMethod,
+                        TotalAmount = cart.cartItems.Sum(i => i.Product.Price * i.Quantity),
+                        OrderDetails = new List<OrderItems>()
+                    };
+
+                    foreach (var cartItem in cart.cartItems)
+                    {
+                        var result = await _productService.UpdateStockAsync(cartItem.ProductId, cartItem.Quantity);
+                        if (!result.Isuccess)
+                        {
+                            return new ServiceResponse(false, result.Message);
+                        }
+                         order.OrderDetails.Add(new OrderItems
+                        {
+                            ProductId = cartItem.ProductId,
+                            OrderQuantity = cartItem.Quantity,
+                            OdersPrice = cartItem.Product.Price,
+                        });
+                    }
+
+                    await _cartService.ClearCart(userId);
+
+
+                    await _orderRepository.AddOrderAsync(order);
+                    await _orderRepository.SaveChanges();
+
+
+                    await transaction.CommitAsync ();
+                    return new ServiceResponse(true, "Đặt hàng thành công");
                 }
-
-                order.OrderDate = DateTime.Now;
-                order.OrderStatus = Order.Status.Pending.ToString();
-
-                await _orderRepository.AddOrderAsync(order);
-                await _orderRepository.SaveChanges();
-
-                return new ServiceResponse(true, "Đặt hàng thành công");
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse(false, "Có lỗi xảy ra : " + ex.Message);
+                catch (SqlException ex)
+                {
+                    await transaction.RollbackAsync();
+                    return new ServiceResponse(false, "Có lỗi xảy ra 1 : " + ex.Message);
+                }
             }
         }
 
@@ -92,4 +127,3 @@ namespace Assignment_Backend.Services
         }
     }
 }
- 

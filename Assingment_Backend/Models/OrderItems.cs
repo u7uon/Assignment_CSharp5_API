@@ -6,18 +6,20 @@ namespace Assignment_Backend.Models
     {
         public int Id { get; set; }
 
+        [ForeignKey(nameof(OrderId))]        
+        public int OrderId { get; set; }
+        public Order? Order { get; set; }
 
-        [ForeignKey("Product")]
+
+        [ForeignKey("ProductId")]
         public int ProductId { get; set; }
-        public Product? Product { get; set; }
+        public virtual Product? Product { get; set; }
 
         public decimal? OdersPrice { get; set; }
 
         public int OrderQuantity { get; set; }
 
         public decimal? TotalPrice {  get; set; }
-
-
 
     }
 }

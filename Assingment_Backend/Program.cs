@@ -15,7 +15,9 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+var blazorAccept = "AllowBlazor";
 
 var config = builder.Configuration; 
 
@@ -28,6 +30,11 @@ builder.Services.AddCors(options =>
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
+    options.AddPolicy(name: blazorAccept,
+        policy => policy.WithOrigins("https://localhost:7299") // cổng Blazor WebAssembly
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials());
 });
 
 
@@ -131,6 +138,9 @@ builder.Services.AddControllers()
     });
 var app = builder.Build();
 
+
+app.UseCors(blazorAccept);
+
 app.UseCors(MyAllowSpecificOrigins);
 
 
@@ -144,6 +154,21 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.Headers.Add("Access-Control-Allow-Origin", "https://localhost:7299");
+        context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        context.Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+        context.Response.StatusCode = 200;
+        return;
+    }
+    await next();
+});
 
 app.MapControllers();
 

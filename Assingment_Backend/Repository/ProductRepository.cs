@@ -19,12 +19,12 @@ namespace Assignment_Backend.Repository
 
         }
 
-
-        public async Task<(int, IEnumerable<ProductGetDto>)> GetAllAsync(int currentPage)
+        public async Task<(int, IEnumerable<ProductGetDto>)> GetAllAsync(int currentPage, bool status)
         {
-            var total = await _dbSet.CountAsync();
+            var total = await _dbSet.Where(p => p.IsActive == status).CountAsync();
 
             var products = await _dbSet
+                .Where(p => p.IsActive == status)
                 .Select(x => new ProductGetDto
                 {
                     Id = x.Id,
@@ -61,11 +61,17 @@ namespace Assignment_Backend.Repository
 
         public async Task<Product> GetProductByIdAsync(int id)
         {
-            return await _dbSet.Where(p => p.Id == id).FirstOrDefaultAsync(); 
+            return await _dbSet
+                .Include(p => p.Brand)
+                .Include(p => p.Category)
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
 
 
-        public  IQueryable<Product> SearchByName (string keyword)
+
+
+
+        public IQueryable<Product> SearchByName (string keyword)
         {
             var productQuery = _dbSet.Include(x => x.Brand).Include(x => x.Category).Where(x => x.Name.ToLower().Contains(keyword.ToLower())).AsNoTracking();
 

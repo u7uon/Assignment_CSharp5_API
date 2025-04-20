@@ -16,51 +16,38 @@ namespace Assignment_Backend.Controllers
     [Authorize(Roles = "User")]
     public class OrderController : Controller
     {
-        private  readonly ICartService _cartService;
         private  readonly IOrderService _orderService;
 
         public OrderController(ICartService cartService, IOrderService orderService)
         {
-            _cartService = cartService;
+
             _orderService = orderService;
         }
 
-        [HttpGet("confirm")]
-        public async Task<IActionResult> Process()
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            var cart = await _cartService.GetCart(userId);
-
-            return Ok(cart);
-
-        }
-
         [HttpPost]
-        public async Task<IActionResult> OrderPlace(OrderDTO order)
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [Authorize(Roles = "User")]
+        public async Task<IActionResult> OrderPlace([FromBody]OrderDTO order)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            var newOrder = new Order
-            {
-                UserId = userId,
-                PayMethod = order.PayMethod,
-                Address = order.Address,
-                OrderDetails = order.OrderDetails,
-            }; 
+            if (userId == null)
+                return Unauthorized(new { Message = "Chưa đăng nhập" });
 
-            var OrderResult = await _orderService.PlaceOrderAsync(newOrder);
+            var OrderResult = await _orderService.PlaceOrderAsync(userId, order);
 
 
-            return OrderResult.Isuccess ? Ok(OrderResult) : BadRequest(OrderResult);
+            return OrderResult.Isuccess ? Ok(new { Message = OrderResult.Message }) : BadRequest(new {Message = OrderResult.Message});
         }
 
-        [HttpGet("")]
+        [HttpGet]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [Authorize(Roles = "User")]
         public  async Task<IActionResult> GetOrdersByUser()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            var orders = await _orderService.GetOrdersByUserIdAsync(userId);
+           var orders = await _orderService.GetOrdersByUserIdAsync(userId);
 
             return orders == null ? BadRequest(orders) : Ok(orders);
         } 

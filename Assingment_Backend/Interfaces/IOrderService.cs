@@ -6,7 +6,7 @@ namespace Assignment_Backend.Interfaces
 {
     public interface IOrderService
     {
-        Task< ServiceResponse> PlaceOrderAsync(Order order);
+        Task< ServiceResponse> PlaceOrderAsync(string userId ,OrderDTO orderDto);
 
         Task< ServiceResponse> CancelOrderAsync(int OrderId);
 

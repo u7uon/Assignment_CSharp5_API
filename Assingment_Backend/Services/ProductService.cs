@@ -44,6 +44,7 @@ namespace Assignment_Backend.Services
                 {
                     Name = productDTO.Name,
                     Description = productDTO.Description,
+                    Quantity = productDTO.Quantity,
                     Price = productDTO.Price,
                     Image = imageUrl,
                     BrandId = productDTO.BrandId,
@@ -96,11 +97,11 @@ namespace Assignment_Backend.Services
             }
         }
 
-        public async Task<ItemViewDTO<ProductGetDto>> GetAllProductAsync(int currentPage)
+        public async Task<ItemViewDTO<ProductGetDto>> GetAllProductAsync(int currentPage,bool status)
         {
             var ProductsView = new ItemViewDTO<ProductGetDto>();
 
-            var (total, products) = await _productRepository.GetAllAsync(currentPage);
+            var (total, products) = await _productRepository.GetAllAsync(currentPage ,status);
 
             ProductsView.Items = products;
             ProductsView.MaxPage = (int)Math.Ceiling((double)total / ProductsView.PageSize);
@@ -244,16 +245,17 @@ namespace Assignment_Backend.Services
             if (product == null)
                 return new ServiceResponse(false, "Sản phẩm không tồn tại");
 
-            //if(quantity > product.Quantity)
-            //    return new ServiceResponse(false, "Số lượng vượt quá tồn kho");
+            if(quantity < 1) 
+                return new ServiceResponse(false, "Số lượng phải lớn hơn 0");
 
-            //product.Quantity -= quantity;
-            // var result =  await UpdateProductAsync(productId ,  product);
+            if (quantity > product.Quantity)
+                return new ServiceResponse(false, $"Sản  phẩm :{product.Name} vượt quá số lượng tồn kho");
+
+            product.Quantity -= quantity;
+            await _productRepository.UpdateAsync(product);
+            await _productRepository.SaveChangesAsync();
 
             return new ServiceResponse(true, "Cập nhật thành công");
-
-
-
         }
 
 
@@ -323,5 +325,19 @@ namespace Assignment_Backend.Services
         {
             return _productRepository.GetLatest();
         }
+
+        public async Task<ServiceResponse> UpdateStatus(int id, bool status)
+        {
+            var product = await _productRepository.GetProductByIdAsync(id);
+            if (product is null)
+                return new ServiceResponse(false, "Sản phẩm không tồn tại");
+
+            product.IsActive = status;
+            await _context.SaveChangesAsync();
+
+            return new ServiceResponse(true, "Cập nhật trạng thái thành công");
+        }
+
+
     }
 }

@@ -16,5 +16,9 @@ namespace Assignment_Backend.Interfaces
 
         public Task<ServiceResponse> DeleteCategoryAsync(int id);
 
+        public Task<IEnumerable<TopItemDTO<Category>>> GetTopCategory();
+
+        public Task<IEnumerable<CategoryDTO>> All();
+
     }
 }

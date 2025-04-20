@@ -15,7 +15,5 @@ namespace Assignment_Backend.Models
 
         public ICollection<CartItem> cartItems { get; set; }
 
-
-
     }
 }

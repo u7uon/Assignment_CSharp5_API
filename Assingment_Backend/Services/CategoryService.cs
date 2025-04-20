@@ -1,18 +1,22 @@
-﻿using Assignment_Backend.DTOs;
+﻿using Assignment_Backend.Data;
+using Assignment_Backend.DTOs;
 using Assignment_Backend.Interfaces;
 using Assignment_Backend.Models;
 using Assignment_Backend.Repository;
 using Assingment_Backend.DTOs;
+using Microsoft.EntityFrameworkCore;
 
 namespace Assignment_Backend.Services
 {
     public class CategoryService : ICategoryService
     {
         private readonly ICategoryRepository _categoryRepository;
+        private readonly ApplicationContext _context;
 
-        public CategoryService(ICategoryRepository categoryRepository)
+        public CategoryService(ICategoryRepository categoryRepository, ApplicationContext co)
         {
             _categoryRepository = categoryRepository;
+            _context = co;
         }
 
         public async Task<ServiceResponse> AddCategoryAsync(Category category)
@@ -101,6 +105,23 @@ namespace Assignment_Backend.Services
         public async Task<Category> GetCategoryAsync(int id)
         {
             return await _categoryRepository.GetCategoryAsync(id);
+        }
+
+        public async Task<IEnumerable<TopItemDTO<Category>>> GetTopCategory()
+        {
+            return await _categoryRepository.GetTopCategory();
+        }
+
+
+        public async Task<IEnumerable<CategoryDTO>> All()
+        {
+            return await _context.Category.Select(
+                   x => new CategoryDTO
+                   {
+                       Id = x.Id,
+                       Name = x.Name
+                   }
+                ).ToListAsync();
         }
     }
 }

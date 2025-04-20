@@ -1,5 +1,6 @@
 ﻿using Assignment_Backend.DTOs;
 using Assignment_Backend.Models;
+using Assingment_Backend.DTOs;
 using Assingment_Backend.Interfaces;
 
 namespace Assignment_Backend.Interfaces
@@ -9,6 +10,8 @@ namespace Assignment_Backend.Interfaces
         public  Task<Category> GetCategoryAsync(int id);
 
         public Task< (int ,IEnumerable<Category> )> GetCategoriesAsync(int currentPage);
+
+        public Task<IEnumerable<TopItemDTO<Category>>> GetTopCategory( );
 
 
 

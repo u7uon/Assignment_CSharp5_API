@@ -1,5 +1,6 @@
 ﻿using Assignment_Backend.DTOs;
 using Assignment_Backend.Models;
+using Assingment_Backend.DTOs;
 
 namespace Assignment_Backend.Interfaces
 {
@@ -10,7 +11,9 @@ namespace Assignment_Backend.Interfaces
         public  Task<ServiceResponse> DescreaseItemByIdAsync(int cartItemId);
 
         public Task<ServiceResponse> RemoveCartItem(int cartItemId);
-        public Task<Cart> GetCart(string userId);
+
+        public Task<ServiceResponse> ClearCart(string userID);
+        public Task<CartViewDTO> GetCart(string userId);
 
     }
 }

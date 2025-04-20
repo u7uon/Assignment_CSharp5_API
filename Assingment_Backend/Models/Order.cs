@@ -1,10 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Microsoft.Identity.Client;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Assignment_Backend.Models
 {
     public class Order
     {
-        public int? OrderId { get; set; }
+        public int OrderId { get; set; }
 
         [ForeignKey(nameof(UserId))]
         public string UserId { get; set; }
@@ -15,8 +16,9 @@ namespace Assignment_Backend.Models
         public string PayMethod { get; set; }
         public  string OrderStatus { get; set; } 
 
-        public string Address { get; set; }
+        public decimal TotalAmount  { get; set; }
 
+        public string Address { get; set; }
 
         public ICollection<OrderItems>? OrderDetails { get; set; }
 

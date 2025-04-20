@@ -45,9 +45,9 @@ namespace Assignment_Backend.Controllers
         {
             var result = await _BrandService.AddBrandAsync(Brand);
             if (result.Isuccess)
-                return Ok(result.Message);
+                return Ok(new { Message = result.Message });
 
-            return BadRequest(result.Message);
+            return BadRequest(new { Message = result.Message });
         }
 
         [HttpPut("{id}")]
@@ -55,11 +55,10 @@ namespace Assignment_Backend.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateBrandAsync(int id, [FromBody] Brand Brand)
         {
-            Console.WriteLine("Sửa aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
 
             var result = await _BrandService.UpdateBrandAsync(id, Brand);
             if (result.Isuccess)
-                return Ok( result.Message);
+                return Ok(new { Message = result.Message });
 
             return BadRequest(new { Message = result.Message } );
 
@@ -73,6 +72,12 @@ namespace Assignment_Backend.Controllers
             var result = await _BrandService.DeleteBrandAsync(id);
 
             return result.Isuccess ? Ok(result.Message) : BadRequest(result.Message);
+        }
+
+        [HttpGet("All")]
+        public async Task<IActionResult> All()
+        {
+            return Ok( await _BrandService.All());
         }
     }
 }

@@ -9,7 +9,7 @@ namespace Assignment_Backend.Interfaces
         public Task<SearchViewDTO> SearchByName(string keyword, int currentPage, FilterModel filter = null);
         public Task<Product> GetProductByIdAsync(int id);
 
-        public Task<ItemViewDTO<ProductGetDto>> GetAllProductAsync(int currentPage);
+        public Task<ItemViewDTO<ProductGetDto>> GetAllProductAsync(int currentPage,bool status);
 
         public Task<ServiceResponse> AddProductAsync(ProductDTO productDTO);
 
@@ -18,6 +18,8 @@ namespace Assignment_Backend.Interfaces
 
         public Task<ServiceResponse> UpdateStockAsync(int productId , int quantity);
 
-        public Task<IEnumerable<ProductViewDTO>> GetLatest(); 
+        public Task<IEnumerable<ProductViewDTO>> GetLatest();
+
+        public Task<ServiceResponse> UpdateStatus(int id, bool status);
     }
 }

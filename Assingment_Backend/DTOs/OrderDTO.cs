@@ -8,6 +8,7 @@ namespace Assignment_Backend.DTOs
         public string PayMethod { get; set; }
         public string Address { get; set; }
 
-        public List<OrderItems> OrderDetails { get; set; }
+
+        //public List<OrderItems> OrderDetails { get; set; }
     }
 }

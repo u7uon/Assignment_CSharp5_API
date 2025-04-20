@@ -15,5 +15,7 @@ namespace Assignment_Backend.Interfaces
         public Task<ServiceResponse> UpdateBrandAsync(int id, Brand Brand);
 
         public Task<ServiceResponse> DeleteBrandAsync(int id);
+
+        public Task<IEnumerable<BrandDTO>> All();
     }
 }

@@ -2,6 +2,8 @@
 using Assignment_Backend.DTOs;
 using Assignment_Backend.Interfaces;
 using Assignment_Backend.Models;
+using Assingment_Backend.DTOs;
+using Assingment_Backend.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Assignment_Backend.Repository
@@ -22,11 +24,32 @@ namespace Assignment_Backend.Repository
                 .ToListAsync();
         }
 
-        public async Task<Cart> GetCartByUserIdAsync(string userId)
+        public async Task<CartViewDTO> GetCartByUserIdAsync(string userId)
         {
-            return await _context.Cart.Include(x => x.cartItems).ThenInclude(x => x.Product)
-                .FirstOrDefaultAsync(x => x.UserId == userId);
+            return await _context.Cart
+                .Where(x => x.UserId == userId)
+                .Select(cart => new CartViewDTO
+                {
+                    CartID = cart.CartID,
+                    cartItems = cart.cartItems.Select(item => new CartItemsViewDTO
+                    {
+                        Id = item.Id,
+                        ProductId = item.ProductId,
+                        Quantity = item.Quantity,
+                        CartId = item.CartId,
+                        Product = new ProductViewDTO
+                        {
+                            Id = item.Product.Id,
+                            Name = item.Product.Name,
+                            Price = item.Product.Price,
+                            ImageUrl = item.Product.Image
+                        }
+                    }).ToList()
+                })
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
         }
+
 
         public async Task<CartItem> GetCartItemByIdAsync(int cartItemId)
         {
